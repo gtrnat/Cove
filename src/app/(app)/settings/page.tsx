@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { FormSkeleton } from "@/components/ui/form-skeleton";
 import { SignOutButton } from "@/features/auth/sign-out-button";
 import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { PreferencesForm } from "@/features/settings/preferences-form";
@@ -9,25 +11,26 @@ import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
-  const user = await requireUser();
-  const settings = await getUserSettings(user.id);
-
+/*
+ * The page itself is static. Sections that need the user's data stream in
+ * behind their own <Suspense>, so navigating here is instant.
+ */
+export default function SettingsPage() {
   return (
     <div>
       <SettingsSection title="Profile" description="How you appear in Cove.">
-        <ProfileForm name={user.name} email={user.email} />
+        <Suspense fallback={<FormSkeleton fields={2} />}>
+          <ProfileSection />
+        </Suspense>
       </SettingsSection>
 
       <SettingsSection
         title="Targets & preferences"
         description="Your daily protein goal, monthly spending budget, and local timezone."
       >
-        <PreferencesForm
-          dailyProteinTargetG={settings.dailyProteinTargetG}
-          monthlyBudget={settings.monthlyBudget}
-          timezone={settings.timezone}
-        />
+        <Suspense fallback={<FormSkeleton fields={3} />}>
+          <PreferencesSection />
+        </Suspense>
       </SettingsSection>
 
       <SettingsSection
@@ -41,5 +44,22 @@ export default async function SettingsPage() {
         <SignOutButton variant="outline" />
       </SettingsSection>
     </div>
+  );
+}
+
+async function ProfileSection() {
+  const user = await requireUser();
+  return <ProfileForm name={user.name} email={user.email} />;
+}
+
+async function PreferencesSection() {
+  const user = await requireUser();
+  const settings = await getUserSettings(user.id);
+  return (
+    <PreferencesForm
+      dailyProteinTargetG={settings.dailyProteinTargetG}
+      monthlyBudget={settings.monthlyBudget}
+      timezone={settings.timezone}
+    />
   );
 }

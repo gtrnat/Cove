@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity, Beef, PiggyBank, Receipt, Wallet } from "lucide-react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +11,23 @@ import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+/** Streams in the user's first name; the rest of the page renders immediately. */
+async function Greeting() {
   const user = await requireUser();
-  const firstName = user.name.split(/\s+/)[0];
+  return <>Welcome back, {user.name.split(/\s+/)[0]}</>;
+}
 
+export default function DashboardPage() {
   return (
     <>
-      <PageHeader title={`Welcome back, ${firstName}`} description="Your month at a glance." />
+      <PageHeader
+        title={
+          <Suspense fallback="Welcome back">
+            <Greeting />
+          </Suspense>
+        }
+        description="Your month at a glance."
+      />
 
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Spent this month" value="—" hint="No transactions yet" icon={Wallet} />
