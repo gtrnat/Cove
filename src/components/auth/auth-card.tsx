@@ -41,3 +41,18 @@ export function Field({
     </div>
   );
 }
+
+/** Placeholder with the same footprint as an auth form, shown while it hydrates. */
+export function AuthFormSkeleton({ fields }: { fields: number }) {
+  return (
+    <div aria-hidden="true" className="space-y-5">
+      {Array.from({ length: fields }, (_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-4 w-16 rounded bg-surface-2" />
+          <div className="h-10 rounded-md border border-border-strong bg-surface" />
+        </div>
+      ))}
+      <div className="h-11 rounded-md bg-accent/40" />
+    </div>
+  );
+}

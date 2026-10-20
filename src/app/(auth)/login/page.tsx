@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthCard, Field } from "@/components/auth/auth-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Suspense } from "react";
+import { AuthCard, AuthFormSkeleton } from "@/components/auth/auth-card";
+import { LoginForm } from "@/features/auth/login-form";
+import { RedirectIfSignedIn } from "@/features/auth/redirect-if-signed-in";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -20,18 +21,13 @@ export default function LoginPage() {
         </>
       }
     >
-      {/* Submission is wired to Better Auth in Phase 2. */}
-      <form className="space-y-5" noValidate>
-        <Field id="email" label="Email">
-          <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
-        </Field>
-        <Field id="password" label="Password">
-          <Input id="password" name="password" type="password" autoComplete="current-password" required />
-        </Field>
-        <Button type="submit" size="lg" className="w-full" disabled>
-          Sign in
-        </Button>
-      </form>
+      <Suspense>
+        <RedirectIfSignedIn />
+      </Suspense>
+      {/* useSearchParams (for ?next=) needs a Suspense boundary. */}
+      <Suspense fallback={<AuthFormSkeleton fields={2} />}>
+        <LoginForm />
+      </Suspense>
     </AuthCard>
   );
 }
