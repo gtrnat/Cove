@@ -209,6 +209,8 @@ API: `POST /api/ingest/transactions` (HMAC), `/api/auth/*` (Better Auth). Mutasi
 ## 7. Keamanan
 
 - Password di-hash oleh Better Auth; cookie session `HttpOnly`, `Secure`, `SameSite=Lax`.
+- Cookie cache Better Auth **dimatikan**: sesi yang di-sign-out atau dicabut (ganti password) langsung tidak berlaku. Ditukar dengan satu query sesi per request.
+- `proxy.ts` hanya cek keberadaan cookie (redirect cepat); validasi sesi sesungguhnya di layout `(app)` dan di setiap Server Action lewat `requireUser()`.
 - Rate limit login/register/ingest.
 - Semua query difilter `user_id` dari session (helper `requireUser()`); admin route dicek `role`.
 - Ingest: HMAC + anti-replay; secret disimpan sebagai hash, bisa di-revoke.
@@ -263,7 +265,8 @@ cove/
 1. Buat akun di supabase.com → **New project** → region **Southeast Asia (Singapore)** → simpan database password.
 2. **Project Settings → Database → Connection string**: ambil dua URL:
    - **Transaction pooler** (port `6543`) → `DATABASE_URL` (dipakai app di Vercel; wajib `prepare: false` di driver).
-   - **Direct / Session** (port `5432`) → `DIRECT_URL` (dipakai drizzle-kit untuk migrasi).
+   - **Session pooler** (host sama, port `5432`) → `DIRECT_URL` (dipakai drizzle-kit untuk migrasi). Jangan pakai host direct `db.<ref>.supabase.co`: di free tier host itu IPv6-only dan tidak bisa diakses dari banyak jaringan.
+   - Cek koneksi kapan saja dengan `npm run db:check`.
 3. Taruh di `.env.local` (tidak di-commit). Di Vercel: **Project → Settings → Environment Variables**.
 4. Catatan free tier: project Supabase **di-pause setelah 7 hari tanpa aktivitas**. Apps Script yang sync tiap 5 menit otomatis menjaga project tetap aktif. Limit DB 500 MB, lebih dari cukup.
 5. Resend (opsional): verifikasi email/reset password ke alamat orang lain butuh **domain sendiri**. Tanpa domain, fitur ini bisa ditunda dan login tetap jalan.

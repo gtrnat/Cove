@@ -6,13 +6,17 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await requireUser();
+  const firstName = user.name.split(/\s+/)[0];
+
   return (
     <>
-      <PageHeader title="Dashboard" description="Your month at a glance." />
+      <PageHeader title={`Welcome back, ${firstName}`} description="Your month at a glance." />
 
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Spent this month" value="—" hint="No transactions yet" icon={Wallet} />

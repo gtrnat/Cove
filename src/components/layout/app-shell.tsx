@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
+import { AccountCard, AccountCardSkeleton } from "@/features/auth/account-card";
 import { ActiveBottomLinks, ActiveSidebarLinks } from "./active-nav";
 import { BottomLinks, SidebarLinks } from "./nav-links";
 
@@ -19,20 +20,10 @@ export function Sidebar() {
         </Suspense>
       </nav>
 
-      {/* Account area. Wired to the signed-in user in Phase 2. */}
       <div className="border-t p-3">
-        <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <div
-            aria-hidden="true"
-            className="grid size-8 place-items-center rounded-full bg-surface-3 text-xs font-medium text-muted"
-          >
-            ·
-          </div>
-          <div className="min-w-0 text-sm">
-            <p className="truncate text-foreground">Guest</p>
-            <p className="truncate text-xs text-muted">Not signed in</p>
-          </div>
-        </div>
+        <Suspense fallback={<AccountCardSkeleton />}>
+          <AccountCard />
+        </Suspense>
       </div>
     </aside>
   );
