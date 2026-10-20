@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AuthCard, AuthFormSkeleton } from "@/components/auth/auth-card";
+import { AuthCard } from "@/components/auth/auth-card";
+import { FormSkeleton } from "@/components/ui/form-skeleton";
 import { LoginForm } from "@/features/auth/login-form";
 import { RedirectIfSignedIn } from "@/features/auth/redirect-if-signed-in";
 
@@ -25,7 +26,7 @@ export default function LoginPage() {
         <RedirectIfSignedIn />
       </Suspense>
       {/* useSearchParams (for ?next=) needs a Suspense boundary. */}
-      <Suspense fallback={<AuthFormSkeleton fields={2} />}>
+      <Suspense fallback={<FormSkeleton fields={2} buttonClassName="h-11 w-full bg-accent/40" />}>
         <LoginForm />
       </Suspense>
     </AuthCard>
