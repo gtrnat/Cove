@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, Beef, PiggyBank, Receipt, Wallet } from "lucide-react";
+import { Activity, Beef, PiggyBank, Wallet } from "lucide-react";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { RecentTransactions, SpendingStats } from "@/features/finance/dashboard-widgets";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -30,8 +30,16 @@ export default function DashboardPage() {
       />
 
       <section aria-label="Summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Spent this month" value="—" hint="No transactions yet" icon={Wallet} />
-        <StatCard label="Budget left" value="—" hint="Set a monthly budget" icon={PiggyBank} />
+        <Suspense
+          fallback={
+            <>
+              <StatCard label="Spent this month" value="…" icon={Wallet} />
+              <StatCard label="Budget left" value="…" icon={PiggyBank} />
+            </>
+          }
+        >
+          <SpendingStats />
+        </Suspense>
         <StatCard label="Protein today" value="0 g" hint="Set a daily target" icon={Beef} />
         <StatCard label="Sessions this week" value="0" hint="Lifts and runs" icon={Activity} />
       </section>
@@ -44,18 +52,10 @@ export default function DashboardPage() {
               View all
             </Link>
           </CardHeader>
-          <CardContent>
-            <EmptyState
-              icon={Receipt}
-              title="Nothing here yet"
-              description="Connect your Gmail to record myBCA receipts automatically."
-              action={
-                <Link href="/settings/integrations" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-                  Set up email sync
-                </Link>
-              }
-              className="border-0 py-10"
-            />
+          <CardContent className="px-0 pb-2 pt-3">
+            <Suspense fallback={<div aria-hidden="true" className="mx-5 h-64 animate-pulse rounded-md bg-surface-2/50" />}>
+              <RecentTransactions />
+            </Suspense>
           </CardContent>
         </Card>
 

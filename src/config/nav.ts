@@ -27,6 +27,7 @@ export const mainNav: NavItem[] = [
 export const financeNav: SubNavItem[] = [
   { label: "Overview", href: "/finance" },
   { label: "Transactions", href: "/finance/transactions" },
+  { label: "Categories", href: "/finance/categories" },
   { label: "Budgets", href: "/finance/budgets" },
   { label: "Rules", href: "/finance/rules" },
 ];
