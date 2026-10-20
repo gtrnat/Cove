@@ -1,6 +1,6 @@
 ﻿# Cove
 
-A quiet place for your money and your training. Finance tracking (auto-imported from myBCA emails) plus strength, running, and protein tracking.
+A quiet place for your money and your training. Finance tracking plus strength, running, and protein tracking.
 
 See [docs/BLUEPRINT.md](docs/BLUEPRINT.md) for architecture, data model, and the phased plan.
 
