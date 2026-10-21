@@ -53,7 +53,7 @@ async function Transactions({ searchParams }: Pick<PageProps<"/finance/transacti
     const sp = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {
       const value = first(v);
-      if (value) sp.set(k, value);
+      if (value && k !== "new") sp.set(k, value);
     }
     for (const [k, v] of Object.entries(next)) {
       if (v) sp.set(k, v);
@@ -64,7 +64,7 @@ async function Transactions({ searchParams }: Pick<PageProps<"/finance/transacti
   };
 
   return (
-    <TransactionEditor categories={categoryChoices} timezone={timezone}>
+    <TransactionEditor categories={categoryChoices} timezone={timezone} autoOpen={first(params.new) === "1"}>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <MonthSwitcher

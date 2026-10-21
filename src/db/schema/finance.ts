@@ -94,6 +94,34 @@ export const categoryRules = pgTable(
   (t) => [unique("category_rules_user_pattern_key").on(t.userId, t.pattern)],
 ).enableRLS();
 
+/**
+ * Recurring monthly limit per expense category (whole rupiah). The overall
+ * monthly budget lives on user_settings.monthly_budget.
+ */
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    unique("budgets_user_category_key").on(t.userId, t.categoryId),
+    check("budgets_amount_positive", sql`${t.amount} > 0`),
+  ],
+).enableRLS();
+
+export type Budget = typeof budgets.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type CategoryRule = typeof categoryRules.$inferSelect;

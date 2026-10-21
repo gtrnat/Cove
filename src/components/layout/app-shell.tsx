@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { AccountCard, AccountCardSkeleton } from "@/features/auth/account-card";
 import { ActiveBottomLinks, ActiveSidebarLinks } from "./active-nav";
+import { CommandMenuTrigger } from "./command-menu";
 import { BottomLinks, SidebarLinks } from "./nav-links";
 
 export function Sidebar() {
@@ -12,6 +13,10 @@ export function Sidebar() {
         <Link href="/dashboard" aria-label="Cove dashboard" className="rounded-md">
           <Logo />
         </Link>
+      </div>
+
+      <div className="px-3 pb-2">
+        <CommandMenuTrigger />
       </div>
 
       <nav aria-label="Main" className="flex-1 px-3 pt-2">
@@ -31,10 +36,11 @@ export function Sidebar() {
 
 export function MobileHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-background/80 px-5 backdrop-blur-md md:hidden">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/80 pl-5 pr-3 backdrop-blur-md md:hidden">
       <Link href="/dashboard" aria-label="Cove dashboard" className="rounded-md">
         <Logo />
       </Link>
+      <CommandMenuTrigger compact />
     </header>
   );
 }

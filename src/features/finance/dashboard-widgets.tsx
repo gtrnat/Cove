@@ -4,11 +4,13 @@ import { PiggyBank, Receipt, Wallet } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
-import { currentMonth, shiftMonth } from "@/lib/dates";
+import { currentMonth, daysInMonth, shiftMonth, todayKey } from "@/lib/dates";
 import { formatIDR, percentChange } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { BudgetBar } from "./budget-bar";
+import { CategoryIcon } from "./category-badge";
 import { getFinanceContext } from "./context";
-import { getMonthTotals, listTransactions } from "./queries";
+import { getBudgetStatus, getMonthTotals, listTransactions } from "./queries";
 import { TransactionEditor } from "./transaction-editor";
 import { TransactionList } from "./transaction-list";
 
@@ -78,6 +80,54 @@ export async function SpendingStats() {
         ) : null}
       </StatCard>
     </>
+  );
+}
+
+/** Category budgets closest to (or over) their limit. */
+export async function BudgetWatch() {
+  const { user, timezone } = await getFinanceContext();
+  await connection();
+  const month = currentMonth(timezone, new Date());
+  const lines = (await getBudgetStatus(user.id, timezone, month))
+    .filter((l) => l.budget !== null)
+    .sort((a, b) => b.spent / b.budget! - a.spent / a.budget!)
+    .slice(0, 4);
+  const pace = Number(todayKey(timezone).slice(8, 10)) / daysInMonth(month);
+
+  if (lines.length === 0) {
+    return (
+      <EmptyState
+        icon={PiggyBank}
+        title="No category budgets"
+        description="Give a few categories a monthly limit and the ones closest to it show up here."
+        action={
+          <Link href="/finance/budgets" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            Set budgets
+          </Link>
+        }
+        className="border-0 py-10"
+      />
+    );
+  }
+
+  return (
+    <ul className="space-y-4">
+      {lines.map((l) => {
+        const left = l.budget! - l.spent;
+        return (
+          <li key={l.id} className="space-y-2">
+            <div className="flex items-center gap-3">
+              <CategoryIcon icon={l.icon} color={l.color} size="sm" />
+              <p className="min-w-0 flex-1 truncate text-sm">{l.name}</p>
+              <p className={cn("tabular text-xs", left < 0 ? "text-negative" : "text-muted")}>
+                {left < 0 ? `${formatIDR(-left)} over` : `${formatIDR(left)} left`}
+              </p>
+            </div>
+            <BudgetBar spent={l.spent} budget={l.budget!} pace={pace} label={`${l.name} budget used`} />
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

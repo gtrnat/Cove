@@ -123,7 +123,7 @@ erDiagram
 - `category_rules` — id, user_id, pattern, category_id, priority
 - `transactions` — id, user_id, **type** (`expense` | `income`), amount (bigint), merchant, description, category_id, **source** (`email` | `manual`), provider (`bca`), external_id, metadata (jsonb), occurred_at, created_at
   - unique `(user_id, external_id)`, index `(user_id, occurred_at desc)`
-- `budgets` — id, user_id, category_id (null = total), month, amount
+- `budgets` — id, user_id, category_id, amount. _Implementasi Fase 8:_ limit bulanan yang **berulang** per kategori expense (bukan per bulan); budget total tetap di `user_settings.monthly_budget`.
 
 ### Fitness: angkat beban & lari
 - `exercises` — id, created_by (null = bawaan), name, muscle_group, equipment, is_public
