@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, isNull, or, sql, sum, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { categories, transactions } from "@/db/schema";
+import { budgets, categories, transactions } from "@/db/schema";
 import { monthBounds, type MonthKey } from "@/lib/dates";
 import type { TransactionFilters } from "./schemas";
 
@@ -103,6 +103,29 @@ export async function getCategoryBreakdown(
     .groupBy(categories.id, categories.name, categories.color, categories.icon)
     .orderBy(desc(total));
 }
+
+/** Each active expense category with its budget (if any) and this month's spending. */
+export async function getBudgetStatus(userId: string, timeZone: string, month: MonthKey) {
+  const [cats, limits, spent] = await Promise.all([
+    getCategories(userId),
+    db.select({ categoryId: budgets.categoryId, amount: budgets.amount }).from(budgets).where(eq(budgets.userId, userId)),
+    getCategoryBreakdown(userId, timeZone, month),
+  ]);
+  const limitBy = new Map(limits.map((l) => [l.categoryId, l.amount]));
+  const spentBy = new Map(spent.map((s) => [s.id, s.total]));
+  return cats
+    .filter((c) => c.type === "expense")
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      color: c.color,
+      budget: limitBy.get(c.id) ?? null,
+      spent: spentBy.get(c.id) ?? 0,
+    }));
+}
+
+export type BudgetLine = Awaited<ReturnType<typeof getBudgetStatus>>[number];
 
 export const PAGE_SIZE = 50;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, X } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { deleteFoodLog } from "./actions";
 import { AddFoodDialog } from "./add-food-dialog";
@@ -18,13 +18,23 @@ export function FoodLogBoard({
   entries,
   recent,
   suggestedMeal,
+  autoAdd,
 }: {
   day: string;
   entries: DayLogEntry[];
   recent: RecentFood[];
   suggestedMeal: Meal;
+  /** Open the add-food dialog on mount (quick add). */
+  autoAdd?: boolean;
 }) {
-  const [adding, setAdding] = useState<Meal | null>(null);
+  const [adding, setAdding] = useState<Meal | null>(autoAdd ? suggestedMeal : null);
+
+  useEffect(() => {
+    if (!autoAdd) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("add");
+    window.history.replaceState(null, "", url);
+  }, [autoAdd]);
 
   return (
     <div className="space-y-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { createContext, use, useCallback, useState } from "react";
+import { createContext, use, useCallback, useEffect, useState } from "react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import {
@@ -21,11 +21,21 @@ type EditorProps = {
   categories: CategoryChoice[];
   timezone: string;
   children: React.ReactNode;
+  /** Open the "new transaction" dialog on mount. */
+  autoOpen?: boolean;
 };
 
 /** Owns one dialog for adding/editing transactions; descendants open it via context. */
-export function TransactionEditor({ categories, timezone, children }: EditorProps) {
-  const [state, setState] = useState<EditorState>({ mode: "closed" });
+export function TransactionEditor({ categories, timezone, children, autoOpen }: EditorProps) {
+  const [state, setState] = useState<EditorState>(autoOpen ? { mode: "new" } : { mode: "closed" });
+
+  // Opened from a "?new=1" quick-add link: drop the param so a reload doesn't reopen it.
+  useEffect(() => {
+    if (!autoOpen) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("new");
+    window.history.replaceState(null, "", url);
+  }, [autoOpen]);
   const close = useCallback(() => setState({ mode: "closed" }), []);
   const openNew = useCallback(() => setState({ mode: "new" }), []);
   const openEdit = useCallback((transaction: EditableTransaction) => setState({ mode: "edit", transaction }), []);

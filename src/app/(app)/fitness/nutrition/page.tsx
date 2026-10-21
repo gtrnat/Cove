@@ -143,7 +143,7 @@ async function Nutrition({ searchParams }: Pick<PageProps<"/fitness/nutrition">,
           </div>
         </Card>
 
-        <Card className="space-y-4 p-6">
+        <Card id="weight" className="scroll-mt-20 space-y-4 p-6">
           <div className="flex items-baseline justify-between">
             <p className="text-[13px] text-muted">Body weight</p>
             {latestWeight && (
@@ -164,7 +164,14 @@ async function Nutrition({ searchParams }: Pick<PageProps<"/fitness/nutrition">,
         </Card>
       </div>
 
-      <FoodLogBoard key={day} day={day} entries={entries} recent={recent} suggestedMeal={day === today ? mealForHour(hour) : "lunch"} />
+      <FoodLogBoard
+        key={day}
+        day={day}
+        entries={entries}
+        recent={recent}
+        suggestedMeal={day === today ? mealForHour(hour) : "lunch"}
+        autoAdd={params.add === "1"}
+      />
     </div>
   );
 }
