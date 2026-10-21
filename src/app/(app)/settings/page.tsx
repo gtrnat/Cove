@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
+import { ShieldCheck } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { FormSkeleton } from "@/components/ui/form-skeleton";
 import { SignOutButton } from "@/features/auth/sign-out-button";
 import { ChangePasswordForm } from "@/features/settings/change-password-form";
@@ -40,10 +43,28 @@ export default function SettingsPage() {
         <ChangePasswordForm />
       </SettingsSection>
 
+      <Suspense>
+        <AdminSection />
+      </Suspense>
+
       <SettingsSection title="Session" description="Sign out of Cove on this device.">
         <SignOutButton variant="outline" />
       </SettingsSection>
     </div>
+  );
+}
+
+/** Only rendered for admins. */
+async function AdminSection() {
+  const user = await requireUser();
+  if (user.role !== "admin") return null;
+  return (
+    <SettingsSection title="Admin" description="Tools only you can see.">
+      <Link href="/admin/foods" className={buttonVariants({ variant: "secondary" })}>
+        <ShieldCheck aria-hidden="true" />
+        Food moderation
+      </Link>
+    </SettingsSection>
   );
 }
 

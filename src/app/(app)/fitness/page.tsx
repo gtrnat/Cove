@@ -12,6 +12,7 @@ import { getTrainingSummary } from "@/features/strength/overview";
 import { listSessions } from "@/features/strength/queries";
 import { SessionList } from "@/features/strength/session-list";
 import { WeeklyBarChart } from "@/components/charts/weekly-bar-chart";
+import { BodyWeightStat } from "@/features/nutrition/dashboard-widgets";
 import { formatKm } from "@/features/running/format";
 
 export const metadata: Metadata = { title: "Fitness" };
@@ -31,7 +32,9 @@ export default function FitnessOverviewPage() {
         >
           <TrainingStats />
         </Suspense>
-        <StatCard label="Body weight" value="—" hint="Weight logging comes with nutrition" icon={Scale} />
+        <Suspense fallback={<StatCard label="Body weight" value="…" icon={Scale} />}>
+          <BodyWeightStat />
+        </Suspense>
       </section>
 
       <Suspense fallback={<div aria-hidden="true" className="h-72 animate-pulse rounded-lg border bg-surface" />}>
