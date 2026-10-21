@@ -1,15 +1,19 @@
 import "server-only";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "@/env";
 import { provisionUser } from "@/features/settings/provision";
 
+const REGISTRATION_CLOSED = "Registration is closed. Ask the owner of this Cove for an invite.";
+
 export const auth = betterAuth({
   appName: "Cove",
-  baseURL: env.BETTER_AUTH_URL,
+  baseURL: env.APP_URL,
+  trustedOrigins: env.TRUSTED_ORIGINS,
   secret: env.BETTER_AUTH_SECRET,
 
   database: drizzleAdapter(db, {
@@ -76,8 +80,12 @@ export const auth = betterAuth({
       create: {
         before: async (user) => {
           const email = user.email.toLowerCase();
-          const role = env.ADMIN_EMAILS.includes(email) ? "admin" : "user";
-          return { data: { ...user, email, role } };
+          const isAdmin = env.ADMIN_EMAILS.includes(email);
+          // Closed registration still lets listed admins create their account.
+          if (!env.ALLOW_REGISTRATION && !isAdmin) {
+            throw new APIError("FORBIDDEN", { message: REGISTRATION_CLOSED, code: "REGISTRATION_CLOSED" });
+          }
+          return { data: { ...user, email, role: isAdmin ? "admin" : "user" } };
         },
         after: async (user) => {
           await provisionUser(user.id);

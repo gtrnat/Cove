@@ -19,6 +19,8 @@ export function authErrorMessage(
   switch (error.code) {
     case "INVALID_EMAIL_OR_PASSWORD":
       return "That email and password don't match.";
+    case "REGISTRATION_CLOSED":
+      return "Registration is closed. Ask the owner of this Cove for an invite.";
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "An account with this email already exists.";
