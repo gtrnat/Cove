@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { RecentTransactions, SpendingStats } from "@/features/finance/dashboard-widgets";
+import { ProteinTodayStat } from "@/features/nutrition/dashboard-widgets";
 import { RecentActivity, SessionsThisWeekStat } from "@/features/strength/dashboard-widgets";
 import { requireUser } from "@/lib/session";
 
@@ -40,7 +41,9 @@ export default function DashboardPage() {
         >
           <SpendingStats />
         </Suspense>
-        <StatCard label="Protein today" value="0 g" hint="Set a daily target" icon={Beef} />
+        <Suspense fallback={<StatCard label="Protein today" value="…" icon={Beef} />}>
+          <ProteinTodayStat />
+        </Suspense>
         <Suspense fallback={<StatCard label="Sessions this week" value="…" icon={Activity} />}>
           <SessionsThisWeekStat />
         </Suspense>
