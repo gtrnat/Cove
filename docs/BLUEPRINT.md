@@ -217,7 +217,13 @@ API: `POST /api/ingest/transactions` (Bearer API key), `/api/auth/*` (Better Aut
 - Password di-hash oleh Better Auth; cookie session `HttpOnly`, `Secure`, `SameSite=Lax`.
 - Cookie cache Better Auth **dimatikan**: sesi yang di-sign-out atau dicabut (ganti password) langsung tidak berlaku. Ditukar dengan satu query sesi per request.
 - `proxy.ts` hanya cek keberadaan cookie (redirect cepat); validasi sesi sesungguhnya di layout `(app)` dan di setiap Server Action lewat `requireUser()`.
-- Rate limit login/register/ingest.
+- Rate limit (semua di tabel `rate_limits`, berlaku lintas instance serverless):
+  - sign-in 5/menit, sign-up 5/10 menit, ganti password 5/menit per IP (Better Auth);
+  - ingest: 60 request/10 menit per API key, dan 20 percobaan key salah/10 menit per IP. IP yang mengirim key valid tidak ikut diblokir, karena IP Apps Script dipakai bersama banyak akun Google.
+- Header keamanan di semua respons: HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, COOP, dan CSP (`frame-ancestors`, `base-uri`, `form-action`, `object-src`). `script-src` belum diatur karena butuh nonce untuk inline script Next.js.
+- Registrasi bisa dikunci dengan `ALLOW_REGISTRATION=false`; email di `ADMIN_EMAILS` tetap bisa mendaftar.
+- Preview deployment memakai URL-nya sendiri untuk auth (`VERCEL_BRANCH_URL`/`VERCEL_URL`), tapi memakai database production.
+- Dependency: `npm audit` per Fase 9 tidak menemukan celah di dependency runtime yang high/critical. Sisa temuan ada di dev tooling (`eslint-config-next` → `braces`, `drizzle-kit` → `esbuild` lama) yang tidak ikut ke production; perbaikan otomatisnya mengusulkan downgrade major, jadi tidak diterapkan.
 - Semua query difilter `user_id` dari session (helper `requireUser()`); admin route dicek `role`.
 - Ingest: bearer API key per user (maks 5 aktif), hanya SHA-256 secret yang disimpan, dibandingkan timing-safe, bisa di-revoke. Body maks 1 MB / 50 email. Metadata transaksi tidak menyimpan nomor rekening, PAN, atau RRN.
 - **Supabase:** app konek langsung via Postgres (bukan Data API). RLS di-enable di semua tabel tanpa policy, sehingga anon key Supabase tidak bisa membaca data apa pun.

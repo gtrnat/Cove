@@ -74,6 +74,7 @@ async function GmailIntegration() {
         </span>
       </div>
       <ApiKeyManager
+        // Always the production URL: the script must keep working after a preview is gone.
         appUrl={env.BETTER_AUTH_URL}
         keys={keys.map((k) => ({
           id: k.id,
