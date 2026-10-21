@@ -90,6 +90,35 @@ export function formatTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+/** "YYYY-MM-DD" → the Monday of its week, same format. */
+export function weekStart(dayKey: string) {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const offset = (date.getUTCDay() + 6) % 7; // Monday = 0
+  date.setUTCDate(date.getUTCDate() - offset);
+  return date.toISOString().slice(0, 10);
+}
+
+/** Shift a "YYYY-MM-DD" by whole days. */
+export function addDays(dayKey: string, days: number) {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** Instant → "Sat, 18 Oct 2026, 11:03" in a timezone */
+export function formatDateTime(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+}
+
 /** Instant → "18 Oct" in a timezone */
 export function formatShortDate(date: Date, timeZone: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" }).format(date);

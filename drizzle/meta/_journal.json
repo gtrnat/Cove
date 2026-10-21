@@ -22,6 +22,20 @@
       "when": 1792546064109,
       "tag": "0002_ingest_keys_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792551969032,
+      "tag": "0003_fitness_strength",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792551974010,
+      "tag": "0004_seed_exercises",
+      "breakpoints": true
     }
   ]
 }
