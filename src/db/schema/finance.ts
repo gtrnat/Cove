@@ -74,5 +74,26 @@ export const transactions = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Auto-categorization for imported transactions: if the merchant contains
+ * `pattern` (case-insensitive), use `categoryId`. Longest pattern wins.
+ */
+export const categoryRules = pgTable(
+  "category_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pattern: text("pattern").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("category_rules_user_pattern_key").on(t.userId, t.pattern)],
+).enableRLS();
+
 export type Category = typeof categories.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
+export type CategoryRule = typeof categoryRules.$inferSelect;

@@ -32,7 +32,7 @@ flowchart LR
     M[Gmail<br/>notif myBCA] -->|trigger tiap 5 menit| A[Apps Script<br/>parser BCA]
     A --> S[(Google Sheet<br/>backup & audit)]
   end
-  A -->|POST /api/ingest/transactions<br/>HMAC signed, API key per user| N
+  A -->|POST /api/ingest/transactions<br/>Bearer API key per user| N
   subgraph V[Vercel]
     N[Route Handlers] --> D
     UI[UI · Server Components] --> SA[Server Actions] --> D
@@ -51,13 +51,19 @@ Setiap user memasang Apps Script **di akun Google mereka sendiri** (Cove tidak p
 3. Halaman integrations menampilkan status: last sync, jumlah transaksi masuk, error terakhir.
 
 ### Alur ingest
-1. Search Gmail: `from:bca.co.id subject:(transaction OR transaksi) -label:cove/processed newer_than:7d`
-2. Parse body email (lihat §3). Hanya `Status: Successful` yang diproses.
-3. Append ke Sheet: `received_at | date | merchant | amount | reference_no | type | status_sync`.
-4. POST batch ke Cove dengan header `X-Cove-Key-Id`, `X-Cove-Timestamp`, `X-Cove-Signature = HMAC-SHA256(timestamp + "." + body, secret)`.
-5. Cove: verifikasi signature, tolak timestamp > 5 menit, upsert dengan unique `(user_id, external_id)`, jadi **idempotent**.
-6. Sukses → email diberi label `cove/processed`. Gagal → `status_sync = pending`, di-retry di run berikutnya.
-7. Auto-kategori lewat `category_rules` (mis. merchant mengandung `JUS` → Food & Drinks).
+_Diimplementasikan di Fase 4 (berbeda dari rencana awal, lihat catatan)._
+
+1. Apps Script search Gmail: `from:bca.co.id "through myBCA" after:<watermark - 15 menit>`. Watermark disimpan di Script Properties; first run mundur 30 hari.
+2. POST batch (≤ 25 email) ke `/api/ingest/transactions` dengan `Authorization: Bearer cove_<keyId>_<secret>`. Body berisi **email mentah** (plain text).
+3. **Parsing di server** (`src/features/ingest/bca-parser.ts`), jadi perbaikan parser langsung berlaku untuk semua user tanpa paste ulang script.
+4. Insert dengan unique `(user_id, external_id)` (`bca:<Reference No.>`), jadi **idempotent**: email yang terkirim ulang jadi `duplicate`.
+5. Watermark baru maju setelah Cove menerima batch; kalau gagal, di-retry run berikutnya.
+6. Hasil (`imported` / `skipped` / `unparsed`) dicatat di Google Sheet `Cove · myBCA log`.
+7. Auto-kategori lewat `category_rules` (merchant mengandung teks → kategori, pattern terpanjang menang).
+
+**Catatan perubahan dari rencana awal:**
+- **Bearer token, bukan HMAC.** HMAC mengharuskan server menyimpan secret dalam bentuk yang bisa dibaca. Dengan bearer token, server cukup menyimpan SHA-256 dari secret (192-bit acak) dan transport sudah TLS. Replay tidak berbahaya karena insert idempotent.
+- **Watermark, bukan label Gmail.** Label Gmail berlaku per *thread*, dan email BCA bisa tergabung dalam satu thread, sehingga email baru di thread berlabel akan terlewat.
 
 ---
 
@@ -177,7 +183,7 @@ Metrik turunan (dihitung saat query):
 /admin/foods              Moderasi makanan (role admin)
 ```
 
-API: `POST /api/ingest/transactions` (HMAC), `/api/auth/*` (Better Auth). Mutasi lain lewat Server Actions, semua di-scope `user_id` dari session.
+API: `POST /api/ingest/transactions` (Bearer API key), `/api/auth/*` (Better Auth). Mutasi lain lewat Server Actions, semua di-scope `user_id` dari session.
 
 ---
 
@@ -213,7 +219,7 @@ API: `POST /api/ingest/transactions` (HMAC), `/api/auth/*` (Better Auth). Mutasi
 - `proxy.ts` hanya cek keberadaan cookie (redirect cepat); validasi sesi sesungguhnya di layout `(app)` dan di setiap Server Action lewat `requireUser()`.
 - Rate limit login/register/ingest.
 - Semua query difilter `user_id` dari session (helper `requireUser()`); admin route dicek `role`.
-- Ingest: HMAC + anti-replay; secret disimpan sebagai hash, bisa di-revoke.
+- Ingest: bearer API key per user (maks 5 aktif), hanya SHA-256 secret yang disimpan, dibandingkan timing-safe, bisa di-revoke. Body maks 1 MB / 50 email. Metadata transaksi tidak menyimpan nomor rekening, PAN, atau RRN.
 - **Supabase:** app konek langsung via Postgres (bukan Data API). RLS di-enable di semua tabel tanpa policy, sehingga anon key Supabase tidak bisa membaca data apa pun.
 - Konten makanan dari user di-escape (React default) dan divalidasi Zod; ada batas jumlah makanan baru per user per hari.
 - Secret hanya di env var (`.env.local` di-gitignore, env Vercel untuk production).
@@ -251,7 +257,7 @@ cove/
 | **1. Foundation** | Scaffold Next.js, Tailwind, design tokens, shadcn, font, layout app, landing | Shell aplikasi dark yang bisa dinavigasi |
 | **2. Database & Auth** | Setup Supabase, Drizzle, Better Auth, login/register, route guard, seed kategori per user, settings | Multi-user login berfungsi |
 | **3. Finance core** | CRUD transaksi income/expense, kategori, overview + chart, filter | Finance manual berfungsi |
-| **4. Email integration** | API key + HMAC, endpoint ingest, Apps Script BCA, category rules, halaman integrations | Pengeluaran BCA tercatat otomatis |
+| **4. Email integration** | API key (bearer), endpoint ingest + parser server-side, Apps Script BCA, category rules, halaman integrations | Pengeluaran BCA tercatat otomatis |
 | **5. Strength training** | Exercise library + seed, logger sesi, riwayat, progress & PR | Catat & pantau angkat beban |
 | **6. Running** | Form lari, progress km/pace, PR, kalender aktivitas gabungan | Catat & pantau lari |
 | **7. Nutrition** | Seed makanan, units, log protein, target, community foods + anti-duplikat, admin moderasi, body weight | Tracking protein harian |

@@ -93,7 +93,7 @@ async function Overview({ searchParams }: Pick<PageProps<"/finance">, "searchPar
           <EmptyState
             icon={Receipt}
             title="Nothing recorded this month"
-            description="Add a transaction manually. Email import for myBCA receipts arrives in the next update."
+            description="Add a transaction manually, or connect Gmail in Settings → Integrations to import myBCA receipts."
             action={<AddTransactionButton variant="secondary" />}
           />
         ) : (
