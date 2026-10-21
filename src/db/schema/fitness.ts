@@ -105,6 +105,31 @@ export const workoutSets = pgTable(
   ],
 ).enableRLS();
 
+export const runType = pgEnum("run_type", ["easy", "tempo", "interval", "long", "race", "recovery"]);
+export const runSurface = pgEnum("run_surface", ["road", "treadmill", "trail", "track"]);
+
+/** One row per run session. Duration lives on workout_sessions.duration_s. */
+export const runDetails = pgTable(
+  "run_details",
+  {
+    sessionId: uuid("session_id")
+      .primaryKey()
+      .references(() => workoutSessions.id, { onDelete: "cascade" }),
+    distanceM: integer("distance_m").notNull(),
+    runType: runType("run_type").notNull().default("easy"),
+    surface: runSurface("surface").notNull().default("road"),
+    avgHr: integer("avg_hr"),
+    maxHr: integer("max_hr"),
+    elevationGainM: integer("elevation_gain_m"),
+    cadence: integer("cadence"),
+  },
+  (t) => [
+    check("run_details_distance_range", sql`${t.distanceM} > 0 and ${t.distanceM} <= 500000`),
+    check("run_details_hr_range", sql`(${t.avgHr} is null or ${t.avgHr} between 30 and 240) and (${t.maxHr} is null or ${t.maxHr} between 30 and 240)`),
+  ],
+).enableRLS();
+
+export type RunDetails = typeof runDetails.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type WorkoutSet = typeof workoutSets.$inferSelect;

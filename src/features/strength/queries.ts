@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, inArray, isNull, max, ne, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { exercises, workoutSessions, workoutSets } from "@/db/schema";
+import { exercises, runDetails, workoutSessions, workoutSets } from "@/db/schema";
 import { estimate1RM } from "./metrics";
 
 const notWarmup = sql`not ${workoutSets.isWarmup}`;
@@ -73,9 +73,13 @@ export async function lastSetsFor(userId: string, exerciseIds: string[], exclude
 
 export const HISTORY_PAGE_SIZE = 20;
 
-export async function listSessions(userId: string, opts: { limit?: number; page?: number } = {}) {
+export async function listSessions(
+  userId: string,
+  opts: { limit?: number; page?: number; type?: "strength" | "run" } = {},
+) {
   const limit = opts.limit ?? HISTORY_PAGE_SIZE;
   const page = opts.page ?? 1;
+  const where = and(eq(workoutSessions.userId, userId), opts.type ? eq(workoutSessions.type, opts.type) : undefined);
   const [rows, [{ total }]] = await Promise.all([
     db
       .select({
@@ -88,16 +92,20 @@ export async function listSessions(userId: string, opts: { limit?: number; page?
         setCount: sql<number>`count(${workoutSets.id}) filter (where ${notWarmup})`.mapWith(Number),
         volume: volumeExpr.mapWith(Number),
         exerciseNames: sql<string[]>`coalesce(array_agg(distinct ${exercises.name}) filter (where ${exercises.name} is not null), '{}')`,
+        // Runs have no sets, so the run_details join yields one row per run session.
+        distanceM: max(runDetails.distanceM),
+        runType: max(sql<string>`${runDetails.runType}::text`),
       })
       .from(workoutSessions)
       .leftJoin(workoutSets, eq(workoutSets.sessionId, workoutSessions.id))
       .leftJoin(exercises, eq(exercises.id, workoutSets.exerciseId))
-      .where(eq(workoutSessions.userId, userId))
+      .leftJoin(runDetails, eq(runDetails.sessionId, workoutSessions.id))
+      .where(where)
       .groupBy(workoutSessions.id)
       .orderBy(desc(workoutSessions.startedAt))
       .limit(limit)
       .offset((page - 1) * limit),
-    db.select({ total: count() }).from(workoutSessions).where(eq(workoutSessions.userId, userId)),
+    db.select({ total: count() }).from(workoutSessions).where(where),
   ]);
   return { rows, total, page, pageCount: Math.max(1, Math.ceil(total / limit)) };
 }
@@ -202,6 +210,9 @@ export async function performedExercises(userId: string) {
     .orderBy(desc(max(workoutSessions.startedAt)));
 }
 
+export type WeekTotals = { sessions: number; volume: number; runs: number; distanceM: number };
+export const EMPTY_WEEK: WeekTotals = { sessions: 0, volume: 0, runs: 0, distanceM: 0 };
+
 /**
  * Weekly totals for the last `weeks` weeks, keyed by the Monday (local date).
  * Grouped by position so the timezone parameter appears only once.
@@ -213,9 +224,12 @@ export async function weeklyTotals(userId: string, timeZone: string, weeks = 52)
       week,
       sessions: sql<number>`count(distinct ${workoutSessions.id})`.mapWith(Number),
       volume: volumeExpr.mapWith(Number),
+      runs: sql<number>`count(distinct ${runDetails.sessionId})`.mapWith(Number),
+      distanceM: sql<number>`coalesce(sum(${runDetails.distanceM}), 0)`.mapWith(Number),
     })
     .from(workoutSessions)
     .leftJoin(workoutSets, eq(workoutSets.sessionId, workoutSessions.id))
+    .leftJoin(runDetails, eq(runDetails.sessionId, workoutSessions.id))
     .where(
       and(
         eq(workoutSessions.userId, userId),
@@ -223,8 +237,7 @@ export async function weeklyTotals(userId: string, timeZone: string, weeks = 52)
       ),
     )
     .groupBy(sql`1`);
-  return Object.fromEntries(rows.map((r) => [r.week, { sessions: r.sessions, volume: r.volume }])) as Record<
-    string,
-    { sessions: number; volume: number }
-  >;
+  return Object.fromEntries(
+    rows.map((r) => [r.week, { sessions: r.sessions, volume: r.volume, runs: r.runs, distanceM: r.distanceM }]),
+  ) as Record<string, WeekTotals>;
 }
