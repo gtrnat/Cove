@@ -35,6 +35,7 @@ export const financeNav: SubNavItem[] = [
 export const fitnessNav: SubNavItem[] = [
   { label: "Overview", href: "/fitness" },
   { label: "History", href: "/fitness/history" },
+  { label: "Exercises", href: "/fitness/exercises" },
   { label: "Running", href: "/fitness/running" },
   { label: "Nutrition", href: "/fitness/nutrition" },
   { label: "Foods", href: "/fitness/foods" },

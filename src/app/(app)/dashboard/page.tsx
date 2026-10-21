@@ -4,9 +4,9 @@ import { Activity, Beef, PiggyBank, Wallet } from "lucide-react";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { RecentTransactions, SpendingStats } from "@/features/finance/dashboard-widgets";
+import { RecentActivity, SessionsThisWeekStat } from "@/features/strength/dashboard-widgets";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -41,7 +41,9 @@ export default function DashboardPage() {
           <SpendingStats />
         </Suspense>
         <StatCard label="Protein today" value="0 g" hint="Set a daily target" icon={Beef} />
-        <StatCard label="Sessions this week" value="0" hint="Lifts and runs" icon={Activity} />
+        <Suspense fallback={<StatCard label="Sessions this week" value="…" icon={Activity} />}>
+          <SessionsThisWeekStat />
+        </Suspense>
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -66,13 +68,10 @@ export default function DashboardPage() {
               View all
             </Link>
           </CardHeader>
-          <CardContent>
-            <EmptyState
-              icon={Activity}
-              title="No sessions logged"
-              description="Your lifts and runs will show up here."
-              className="border-0 py-10"
-            />
+          <CardContent className="pt-3">
+            <Suspense fallback={<div aria-hidden="true" className="h-48 animate-pulse rounded-md bg-surface-2/50" />}>
+              <RecentActivity />
+            </Suspense>
           </CardContent>
         </Card>
       </section>
