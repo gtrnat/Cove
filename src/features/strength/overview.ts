@@ -2,7 +2,7 @@ import "server-only";
 import { connection } from "next/server";
 import { addDays, todayKey, weekStart } from "@/lib/dates";
 import { getFitnessContext } from "./context";
-import { weeklyTotals } from "./queries";
+import { EMPTY_WEEK, weeklyTotals } from "./queries";
 
 /** This week's totals, consecutive training weeks, and the last `chartWeeks` weeks. */
 export async function getTrainingSummary(chartWeeks = 8) {
@@ -21,11 +21,12 @@ export async function getTrainingSummary(chartWeeks = 8) {
 
   const weeks = Array.from({ length: chartWeeks }, (_, i) => {
     const key = addDays(thisWeek, -7 * (chartWeeks - 1 - i));
-    return { week: key, ...(totals[key] ?? { sessions: 0, volume: 0 }) };
+    return { week: key, ...(totals[key] ?? EMPTY_WEEK) };
   });
 
   return {
-    thisWeek: totals[thisWeek] ?? { sessions: 0, volume: 0 },
+    thisWeek: totals[thisWeek] ?? EMPTY_WEEK,
+    lastWeek: totals[addDays(thisWeek, -7)] ?? EMPTY_WEEK,
     streak,
     weeks,
     timezone,

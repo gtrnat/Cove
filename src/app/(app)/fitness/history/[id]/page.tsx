@@ -10,6 +10,15 @@ import { DeleteWorkoutButton } from "@/features/strength/delete-workout-button";
 import { muscleLabels, type MuscleGroup } from "@/features/strength/labels";
 import { estimate1RM, formatDuration, formatE1RM, formatVolume, formatWeight } from "@/features/strength/metrics";
 import { getSessionDetail } from "@/features/strength/queries";
+import {
+  formatClock,
+  formatKm,
+  formatPace,
+  paceSecondsPerKm,
+  runTypeLabels,
+  surfaceLabels,
+} from "@/features/running/format";
+import { getRun, type RunRow } from "@/features/running/queries";
 import { formatDateTime } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Workout" };
@@ -32,6 +41,11 @@ async function SessionDetail({ params }: Pick<PageProps<"/fitness/history/[id]">
   const [{ user, timezone }, { id }] = await Promise.all([getFitnessContext(), params]);
   const detail = /^[0-9a-f-]{36}$/i.test(id) ? await getSessionDetail(user.id, id) : null;
   if (!detail) notFound();
+  if (detail.session.type === "run") {
+    const run = await getRun(user.id, detail.session.id);
+    if (!run) notFound();
+    return <RunDetail run={run} timezone={timezone} />;
+  }
   const { session, exercises } = detail;
 
   const working = exercises.flatMap((e) => e.sets.filter((s) => !s.isWarmup));
@@ -108,6 +122,64 @@ async function SessionDetail({ params }: Pick<PageProps<"/fitness/history/[id]">
             Notes
           </h3>
           <p className="mt-2 whitespace-pre-wrap text-sm">{session.notes}</p>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function RunDetail({ run, timezone }: { run: RunRow; timezone: string }) {
+  const pace = run.durationS ? paceSecondsPerKm(run.durationS, run.distanceM) : 0;
+  const extras = [
+    ["Avg heart rate", run.avgHr, "bpm"],
+    ["Max heart rate", run.maxHr, "bpm"],
+    ["Elevation gain", run.elevationGainM, "m"],
+    ["Cadence", run.cadence, "spm"],
+  ].filter(([, v]) => v !== null) as [string, number, string][];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold tracking-[-0.01em]">{run.title}</h2>
+          <p className="mt-1 text-sm text-muted">
+            {formatDateTime(run.startedAt, timezone)} · {runTypeLabels[run.runType]} · {surfaceLabels[run.surface]}
+          </p>
+        </div>
+        <div className="flex gap-1">
+          <Link href={`/fitness/log/run?edit=${run.id}`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            <Pencil aria-hidden="true" />
+            Edit
+          </Link>
+          <DeleteWorkoutButton id={run.id} />
+        </div>
+      </div>
+
+      <section aria-label="Summary" className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <StatCard label="Distance" value={`${formatKm(run.distanceM)} km`} />
+        <StatCard label="Time" value={run.durationS ? formatClock(run.durationS) : "—"} />
+        <StatCard label="Pace" value={`${formatPace(pace)} /km`} />
+      </section>
+
+      {extras.length > 0 && (
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
+          {extras.map(([label, value, unit]) => (
+            <div key={label} className="bg-surface p-4">
+              <dt className="text-xs text-muted">{label}</dt>
+              <dd className="tabular mt-1 text-lg">
+                {value} <span className="text-sm text-muted">{unit}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {run.notes && (
+        <section aria-labelledby="run-notes" className="rounded-lg border bg-surface p-4">
+          <h3 id="run-notes" className="text-xs font-medium uppercase tracking-wider text-muted">
+            Notes
+          </h3>
+          <p className="mt-2 whitespace-pre-wrap text-sm">{run.notes}</p>
         </section>
       )}
     </div>
